@@ -45,30 +45,6 @@ const checkEmail = (email) => {
     return api.get(`/auth/check-email?email=${email}`);
 };
 
-const forgotPassword = (email) => {
-    return api.post("/auth/forgot-password", { email });
-};
-
-const forgotUsername = (email) => {
-    return api.post("/auth/forgot-username", { email });
-};
-
-const verifyOtp = (email, otp) => {
-    return api.post("/auth/verify-otp", { email, otp });
-};
-
-const resetPassword = (email, otp, newPassword) => {
-    return api.post("/auth/reset-password", { email, otp, newPassword });
-};
-
-const resetUsername = (email, otp, newUsername) => {
-    return api.post("/auth/reset-username", { email, otp, newUsername });
-};
-
-const sendSignupOtp = (email) => {
-    return api.post("/auth/send-signup-otp", { email });
-};
-
 const AuthService = {
     register,
     login,
@@ -76,12 +52,6 @@ const AuthService = {
     getCurrentUser,
     checkUsername,
     checkEmail,
-    forgotPassword,
-    forgotUsername,
-    verifyOtp,
-    resetPassword,
-    resetUsername,
-    sendSignupOtp, // Added export
 };
 
 export default AuthService;

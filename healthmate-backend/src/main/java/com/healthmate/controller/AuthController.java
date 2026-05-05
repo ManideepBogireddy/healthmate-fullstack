@@ -34,9 +34,6 @@ import com.healthmate.repository.UserRepository;
 import com.healthmate.config.JwtUtils;
 import com.healthmate.service.UserDetailsImpl;
 
-import com.healthmate.service.EmailService;
-import com.healthmate.service.OtpService;
-import jakarta.mail.MessagingException;
 import java.util.Map;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
@@ -58,12 +55,6 @@ public class AuthController {
     @Autowired
     JwtUtils jwtUtils;
 
-    @Autowired
-    OtpService otpService;
-
-    @Autowired
-    EmailService emailService;
-
     @GetMapping("/check-username")
     public ResponseEntity<?> checkUsername(@RequestParam String username) {
         System.out.println("Checking availability for: " + username);
@@ -80,116 +71,6 @@ public class AuthController {
             return ResponseEntity.ok(new MessageResponse("Taken"));
         }
         return ResponseEntity.ok(new MessageResponse("Available"));
-    }
-
-    @PostMapping("/send-signup-otp")
-    public ResponseEntity<?> sendSignupOtp(@RequestBody Map<String, String> request) {
-        String email = request.get("email");
-        System.out.println("DEBUG: [AuthController] Received request to send signup OTP to: " + email);
-        
-        if (userRepository.existsByEmail(email)) {
-            System.out.println("DEBUG: [AuthController] REJECTED: Email already exists: " + email);
-            return ResponseEntity.badRequest().body(new MessageResponse("Error: Email is already in use!"));
-        }
-
-        String otp = otpService.generateOtp(email);
-        try {
-            emailService.sendOtpEmail(email, otp, "email_verification");
-            System.out.println("DEBUG: [AuthController] SUCCESS: Email service finished for: " + email);
-        } catch (Exception e) {
-            System.err.println("DEBUG: [AuthController] ERROR: Exception caught in controller for: " + email);
-            e.printStackTrace();
-            return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
-        }
-
-        return ResponseEntity.ok(new MessageResponse("OTP sent to your email!"));
-    }
-
-    // --- Account Recovery Endpoints ---
-
-    @PostMapping("/forgot-password")
-    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> request) {
-        String email = request.get("email");
-        if (!userRepository.existsByEmail(email)) {
-            return ResponseEntity.badRequest().body(new MessageResponse("Error: Email not found!"));
-        }
-
-        String otp = otpService.generateOtp(email);
-        try {
-            emailService.sendOtpEmail(email, otp, "password_reset");
-        } catch (MessagingException e) {
-            e.printStackTrace();
-            return ResponseEntity.internalServerError().body(new MessageResponse("Error: Failed to send email."));
-        }
-
-        return ResponseEntity.ok(new MessageResponse("OTP sent to your email!"));
-    }
-
-    @PostMapping("/forgot-username")
-    public ResponseEntity<?> forgotUsername(@RequestBody Map<String, String> request) {
-        String email = request.get("email");
-        if (!userRepository.existsByEmail(email)) {
-            return ResponseEntity.badRequest().body(new MessageResponse("Error: Email not found!"));
-        }
-
-        String otp = otpService.generateOtp(email);
-        try {
-            emailService.sendOtpEmail(email, otp, "username_recovery");
-        } catch (MessagingException e) {
-            e.printStackTrace();
-            return ResponseEntity.internalServerError().body(new MessageResponse("Error: Failed to send email."));
-        }
-
-        return ResponseEntity.ok(new MessageResponse("OTP sent to your email!"));
-    }
-
-    @PostMapping("/reset-password")
-    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> request) {
-        String email = request.get("email");
-        String otp = request.get("otp");
-        String newPassword = request.get("newPassword");
-
-        if (otpService.validateOtp(email, otp)) {
-            User user = userRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("Error: User not found."));
-            user.setPassword(encoder.encode(newPassword));
-            userRepository.save(user); // Password updated
-            return ResponseEntity.ok(new MessageResponse("Password reset successfully!"));
-        } else {
-            return ResponseEntity.badRequest().body(new MessageResponse("Invalid or Expired OTP!"));
-        }
-    }
-
-    @PostMapping("/reset-username")
-    public ResponseEntity<?> resetUsername(@RequestBody Map<String, String> request) {
-        String email = request.get("email");
-        String otp = request.get("otp");
-        String newUsername = request.get("newUsername");
-
-        if (otpService.validateOtp(email, otp)) {
-            if (userRepository.existsByUsername(newUsername)) {
-                return ResponseEntity.badRequest().body(new MessageResponse("Error: Username is already taken!"));
-            }
-            User user = userRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("Error: User not found."));
-            user.setUsername(newUsername);
-            userRepository.save(user); // Username updated
-            return ResponseEntity.ok(new MessageResponse("Username reset successfully!"));
-        } else {
-            return ResponseEntity.badRequest().body(new MessageResponse("Invalid or Expired OTP!"));
-        }
-    }
-
-    @PostMapping("/verify-otp")
-    public ResponseEntity<?> verifyOtp(@RequestBody Map<String, String> request) {
-        String email = request.get("email");
-        String otp = request.get("otp");
-
-        if (otpService.validateOtp(email, otp)) {
-            return ResponseEntity.ok(new MessageResponse("Valid"));
-        } else {
-            return ResponseEntity.badRequest().body(new MessageResponse("Invalid or Expired OTP"));
-        }
     }
 
     @PostMapping("/signin")

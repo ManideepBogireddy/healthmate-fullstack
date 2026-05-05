@@ -17,6 +17,7 @@ const Signup = () => {
     });
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    // OTP Logic removed
     const [isPasswordFocused, setIsPasswordFocused] = useState(false);
     const [isConfirmPasswordFocused, setIsConfirmPasswordFocused] = useState(false);
     const [passwordStrength, setPasswordStrength] = useState(0);
@@ -33,13 +34,12 @@ const Signup = () => {
 
     // Username Availability Check
     useEffect(() => {
-        setUsernameAvailable(false); // Reset availability on change
+        setUsernameAvailable(false);
         const checkUsername = async () => {
             if (formData.username.length < 3) {
                 setUsernameError("");
                 return;
             }
-
             setIsCheckingUsername(true);
             try {
                 const response = await AuthService.checkUsername(formData.username);
@@ -47,17 +47,10 @@ const Signup = () => {
                     setUsernameError("Username is already taken");
                     setUsernameAvailable(false);
                 } else {
-                    setUsernameError(""); // Available
+                    setUsernameError("");
                     setUsernameAvailable(true);
                 }
             } catch (err) {
-                console.error("Failed to check username", err);
-                // Optionally visually indicate that check failed, or just don't say "Available"
-                // For now, let's keep it safe. If check fails, we assume we can't guarantee availability.
-                // But preventing signup might be annoying if it's just a network blip.
-                // Let's just NOT clear the error if it was there? No.
-                // Let's set a generic warning or just rely on backend submit check.
-                // Better to not show "Available" if we failed.
                 setUsernameError("Unable to verify username availability");
                 setUsernameAvailable(false);
             } finally {
@@ -69,25 +62,20 @@ const Signup = () => {
             if (formData.username && formData.username.length > 2) {
                 checkUsername();
             }
-        }, 500); // Debounce for 500ms
-
+        }, 500);
         return () => clearTimeout(timeoutId);
     }, [formData.username]);
 
 
     // Email Availability Check
     useEffect(() => {
-        setEmailAvailable(false); // Reset availability on change
-        setEmailVerified(false); // Reset verification if email changes
-        setOtpSent(false);
-        setOtp("");
+        setEmailAvailable(false);
         const checkEmail = async () => {
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(formData.email)) {
-                setEmailError(""); // Clear error if format is invalid
+                setEmailError("");
                 return;
             }
-
             setIsCheckingEmail(true);
             try {
                 const response = await AuthService.checkEmail(formData.email);
@@ -95,11 +83,10 @@ const Signup = () => {
                     setEmailError("Email is already registered");
                     setEmailAvailable(false);
                 } else {
-                    setEmailError(""); // Available
+                    setEmailError("");
                     setEmailAvailable(true);
                 }
             } catch (err) {
-                console.error("Failed to check email", err);
                 setEmailError("Unable to verify email availability");
                 setEmailAvailable(false);
             } finally {
@@ -112,59 +99,8 @@ const Signup = () => {
                 checkEmail();
             }
         }, 500);
-
         return () => clearTimeout(timeoutId);
     }, [formData.email]);
-
-    // OTP Logic
-    const [otp, setOtp] = useState("");
-    const [otpSent, setOtpSent] = useState(false);
-    const [emailVerified, setEmailVerified] = useState(false);
-    const [isSendingOtp, setIsSendingOtp] = useState(false);
-    const [otpError, setOtpError] = useState("");
-    const [otpSuccess, setOtpSuccess] = useState("");
-    const [timer, setTimer] = useState(0);
-
-    useEffect(() => {
-        let interval;
-        if (timer > 0) {
-            interval = setInterval(() => {
-                setTimer((prev) => prev - 1);
-            }, 1000);
-        }
-        return () => clearInterval(interval);
-    }, [timer]);
-
-    const handleSendOtp = async () => {
-        if (!emailAvailable) return;
-        setIsSendingOtp(true);
-        setOtpError("");
-        setOtpSuccess("");
-        try {
-            await AuthService.sendSignupOtp(formData.email);
-            setOtpSent(true);
-            setTimer(60);
-            setOtpSuccess("OTP sent to your email!");
-        } catch (err) {
-            setOtpError(err.response?.data?.message || "Failed to send OTP. Please check your email.");
-        } finally {
-            setIsSendingOtp(false);
-        }
-    };
-
-    const handleVerifyOtp = async () => {
-        setOtpError("");
-        setOtpSuccess("");
-        try {
-            await AuthService.verifyOtp(formData.email, otp);
-            setEmailVerified(true);
-            setOtpSuccess("Email Verified Successfully!");
-            setOtpSent(false); // Hide OTP input
-        } catch (err) {
-            setOtpError("Invalid OTP. Please try again.");
-        }
-    };
-
 
     const calculateStrength = (pass) => {
         let strength = 0;
@@ -179,7 +115,6 @@ const Signup = () => {
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData({ ...formData, [name]: value });
-
         if (name === "password") {
             calculateStrength(value);
         }
@@ -187,16 +122,13 @@ const Signup = () => {
 
     const handleSignup = async (e) => {
         e.preventDefault();
-
-        if (usernameError || emailError) {
-            return; // Block submit if username or email is taken
+        if (usernameError || emailError || !emailAvailable) {
+            return;
         }
-
         if (formData.password !== formData.confirmPassword) {
             setError("Passwords do not match!");
             return;
         }
-
         try {
             await register(
                 formData.username,
@@ -215,9 +147,9 @@ const Signup = () => {
     };
 
     const getStrengthColor = () => {
-        if (passwordStrength < 40) return "#ef4444"; // Red
-        if (passwordStrength < 80) return "#eab308"; // Yellow
-        return "#22c55e"; // Green
+        if (passwordStrength < 40) return "#ef4444";
+        if (passwordStrength < 80) return "#eab308";
+        return "#22c55e";
     };
 
     const passwordsMatch = formData.password === formData.confirmPassword;
@@ -255,88 +187,18 @@ const Signup = () => {
                     </div>
                     <div className="form-group">
                         <label>Email</label>
-                        <div style={{ position: 'relative' }}>
-                            <input
-                                type="email"
-                                name="email"
-                                className="form-control"
-                                onChange={handleChange}
-                                style={{
-                                    borderColor: emailError ? '#ef4444' : (emailVerified ? '#22c55e' : ''),
-                                    paddingRight: '100px' // Space for button
-                                }}
-                                disabled={emailVerified} // Disable if verified
-                                required
-                            />
-                            {!emailVerified && formData.email && !emailError && (
-                                <button
-                                    type="button"
-                                    onClick={handleSendOtp}
-                                    disabled={isSendingOtp || emailVerified || !emailAvailable || (otpSent && timer > 0)}
-                                    style={{
-                                        position: 'absolute',
-                                        right: '5px',
-                                        top: '50%',
-                                        transform: 'translateY(-50%)',
-                                        padding: '5px 10px',
-                                        background: otpSent && timer > 0 ? 'rgba(255, 255, 255, 0.1)' : 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-                                        color: otpSent && timer > 0 ? '#9ca3af' : 'white',
-                                        border: 'none',
-                                        borderRadius: '5px',
-                                        fontSize: '0.8rem',
-                                        cursor: (isSendingOtp || !emailAvailable || (otpSent && timer > 0)) ? 'not-allowed' : 'pointer',
-                                        opacity: isSendingOtp || !emailAvailable ? 0.7 : 1
-                                    }}
-                                >
-                                    {isSendingOtp ? "Sending..." : (otpSent && timer > 0 ? `Resend in ${timer}s` : (otpSent ? "Resend OTP" : "Send OTP"))}
-                                </button>
-                            )}
-                            {emailVerified && (
-                                <span style={{
-                                    position: 'absolute',
-                                    right: '10px',
-                                    top: '50%',
-                                    transform: 'translateY(-50%)',
-                                    color: '#22c55e',
-                                    fontWeight: 'bold',
-                                    fontSize: '0.9rem'
-                                }}>
-                                    Verified ✓
-                                </span>
-                            )}
-                        </div>
-                        {otpSent && !emailVerified && (
-                            <div style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
-                                <input
-                                    type="text"
-                                    placeholder="Enter OTP"
-                                    className="form-control"
-                                    value={otp}
-                                    onChange={(e) => setOtp(e.target.value)}
-                                    style={{ flex: 1 }}
-                                />
-                                <button
-                                    type="button"
-                                    onClick={handleVerifyOtp}
-                                    style={{
-                                        padding: '0 15px',
-                                        background: '#22c55e',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '5px',
-                                        cursor: 'pointer'
-                                    }}
-                                >
-                                    Verify
-                                </button>
-                            </div>
-                        )}
-
-
+                        <input
+                            type="email"
+                            name="email"
+                            className="form-control"
+                            onChange={handleChange}
+                            style={{
+                                borderColor: emailError ? '#ef4444' : (emailAvailable ? '#22c55e' : ''),
+                            }}
+                            required
+                        />
                         {isCheckingEmail && <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '5px' }}>Checking availability...</p>}
                         {emailError && <p style={{ fontSize: '0.8rem', color: '#ef4444', marginTop: '5px' }}>{emailError}</p>}
-                        {otpError && <p style={{ fontSize: '0.8rem', color: '#ef4444', marginTop: '5px' }}>{otpError}</p>}
-                        {otpSuccess && <p style={{ fontSize: '0.8rem', color: '#22c55e', marginTop: '5px' }}>{otpSuccess}</p>}
                     </div>
 
                     <div className="form-group">
@@ -386,10 +248,8 @@ const Signup = () => {
                                 )}
                             </button>
                         </div>
-                        {/* Password Strength and Validation */}
                         {formData.password && (
                             <div style={{ marginTop: '10px' }}>
-                                {/* Strength Bar */}
                                 <div style={{ height: '5px', width: '100%', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden', marginBottom: '5px' }}>
                                     <div style={{
                                         height: '100%',
@@ -398,8 +258,6 @@ const Signup = () => {
                                         transition: 'width 0.3s ease, background 0.3s ease'
                                     }} />
                                 </div>
-
-                                {/* Validation Checklist */}
                                 <div style={{ fontSize: '0.8rem', display: 'flex', flexDirection: 'column', gap: '2px' }}>
                                     <span style={{ color: formData.password.length >= 8 ? '#22c55e' : 'var(--text-muted)' }}>
                                         {formData.password.length >= 8 ? '✓' : '○'} At least 8 characters
@@ -516,7 +374,7 @@ const Signup = () => {
                     <button type="submit" className="btn btn-primary" disabled={
                         !!usernameError ||
                         !!emailError ||
-                        !emailVerified ||
+                        !emailAvailable ||
                         formData.password.length < 8 ||
                         !/[A-Z]/.test(formData.password) ||
                         !/[0-9]/.test(formData.password)
