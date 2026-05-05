@@ -27,3 +27,8 @@ healthmate-frontend/yarn-error.log*
 .vscode/
 *.swp
 *.DS_Store
+
+# Internal Documentation (Hidden from GitHub)
+DEPLOYMENT.md
+DIAGRAMS.md
+DOCUMENTATION.md
