@@ -144,7 +144,7 @@ public class AuthController {
         String otp = request.get("otp");
         String newPassword = request.get("newPassword");
 
-        if (otpService.isOtpValid(email, otp)) {
+        if (otpService.validateOtp(email, otp)) {
             User user = userRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("Error: User not found."));
             user.setPassword(encoder.encode(newPassword));
@@ -161,7 +161,7 @@ public class AuthController {
         String otp = request.get("otp");
         String newUsername = request.get("newUsername");
 
-        if (otpService.isOtpValid(email, otp)) {
+        if (otpService.validateOtp(email, otp)) {
             if (userRepository.existsByUsername(newUsername)) {
                 return ResponseEntity.badRequest().body(new MessageResponse("Error: Username is already taken!"));
             }
@@ -180,7 +180,7 @@ public class AuthController {
         String email = request.get("email");
         String otp = request.get("otp");
 
-        if (otpService.isOtpValid(email, otp)) {
+        if (otpService.validateOtp(email, otp)) {
             return ResponseEntity.ok(new MessageResponse("Valid"));
         } else {
             return ResponseEntity.badRequest().body(new MessageResponse("Invalid or Expired OTP"));
