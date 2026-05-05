@@ -36,12 +36,35 @@ public class OtpService {
     }
 
     public boolean validateOtp(String email, String otp) {
-        // BYPASS FOR DEMO: Always return true so user can record video
-        return true;
+        OtpData data = otpStorage.get(email);
+
+        if (data == null) {
+            return false;
+        }
+
+        // Check expiry
+        if (System.currentTimeMillis() > data.expiryTime) {
+            otpStorage.remove(email); // Cleanup expired
+            return false;
+        }
+
+        // Check match
+        if (data.otp.equals(otp)) {
+            otpStorage.remove(email); // Invalidate after successful use
+            return true;
+        }
+
+        return false;
     }
 
     public boolean isOtpValid(String email, String otp) {
-        // BYPASS FOR DEMO: Always return true
-        return true;
+        OtpData data = otpStorage.get(email);
+        if (data == null)
+            return false;
+        if (System.currentTimeMillis() > data.expiryTime) {
+            otpStorage.remove(email);
+            return false;
+        }
+        return data.otp.equals(otp);
     }
 }

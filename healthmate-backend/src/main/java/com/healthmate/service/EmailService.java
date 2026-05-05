@@ -47,11 +47,7 @@ public class EmailService {
         helper.setSubject(subject);
         helper.setText(htmlContent, true);
 
-        try {
-            javaMailSender.send(message);
-        } catch (Exception e) {
-            System.err.println("Failed to send email: " + e.getMessage());
-            // We don't throw exception here so the app continues
-        }
+        javaMailSender.send(message);
     }
 }
+
