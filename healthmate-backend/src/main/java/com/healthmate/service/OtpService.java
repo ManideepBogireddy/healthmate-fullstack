@@ -45,23 +45,6 @@ public class OtpService {
         // Check expiry
         if (System.currentTimeMillis() > data.expiryTime) {
             otpStorage.remove(email); // Cleanup expired
-            return false;
-        }
-
-        // Check match
-        if (data.otp.equals(otp)) {
-            otpStorage.remove(email); // Invalidate after successful use
-            return true;
-        }
-
-        return false;
-    }
-
-    public boolean isOtpValid(String email, String otp) {
-        OtpData data = otpStorage.get(email);
-        if (data == null)
-            return false;
-        if (System.currentTimeMillis() > data.expiryTime) {
             otpStorage.remove(email);
             return false;
         }
