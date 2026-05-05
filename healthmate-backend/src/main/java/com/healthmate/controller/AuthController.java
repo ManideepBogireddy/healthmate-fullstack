@@ -85,16 +85,21 @@ public class AuthController {
     @PostMapping("/send-signup-otp")
     public ResponseEntity<?> sendSignupOtp(@RequestBody Map<String, String> request) {
         String email = request.get("email");
+        System.out.println("DEBUG: [AuthController] Received request to send signup OTP to: " + email);
+        
         if (userRepository.existsByEmail(email)) {
+            System.out.println("DEBUG: [AuthController] REJECTED: Email already exists: " + email);
             return ResponseEntity.badRequest().body(new MessageResponse("Error: Email is already in use!"));
         }
 
         String otp = otpService.generateOtp(email);
         try {
             emailService.sendOtpEmail(email, otp, "email_verification");
-        } catch (MessagingException e) {
+            System.out.println("DEBUG: [AuthController] SUCCESS: Email service finished for: " + email);
+        } catch (Exception e) {
+            System.err.println("DEBUG: [AuthController] ERROR: Exception caught in controller for: " + email);
             e.printStackTrace();
-            return ResponseEntity.badRequest().body(new MessageResponse("Error: Please enter a valid mail id."));
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: " + e.getMessage()));
         }
 
         return ResponseEntity.ok(new MessageResponse("OTP sent to your email!"));
