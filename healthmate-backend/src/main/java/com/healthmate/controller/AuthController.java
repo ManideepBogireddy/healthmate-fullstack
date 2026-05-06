@@ -121,33 +121,11 @@ public class AuthController {
         user.setActivityLevel(signUpRequest.getActivityLevel());
         user.setHealthGoal(signUpRequest.getHealthGoal());
 
-        Set<String> strRoles = signUpRequest.getRoles();
+        // Streamlined role assignment (always ROLE_USER for public signup)
+        Role userRole = roleRepository.findByName(ERole.ROLE_USER)
+                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
         Set<Role> roles = new HashSet<>();
-
-        if (strRoles == null || strRoles.isEmpty()) {
-            Role userRole = roleRepository.findByName(ERole.ROLE_USER)
-                    .orElseGet(() -> roleRepository.save(new Role(ERole.ROLE_USER)));
-            roles.add(userRole);
-        } else {
-            strRoles.forEach(role -> {
-                switch (role) {
-                    case "admin":
-                        Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN)
-                                .orElseGet(() -> roleRepository.save(new Role(ERole.ROLE_ADMIN)));
-                        roles.add(adminRole);
-                        break;
-                    case "trainer":
-                        Role trainerRole = roleRepository.findByName(ERole.ROLE_TRAINER)
-                                .orElseGet(() -> roleRepository.save(new Role(ERole.ROLE_TRAINER)));
-                        roles.add(trainerRole);
-                        break;
-                    default:
-                        Role userRole = roleRepository.findByName(ERole.ROLE_USER)
-                                .orElseGet(() -> roleRepository.save(new Role(ERole.ROLE_USER)));
-                        roles.add(userRole);
-                }
-            });
-        }
+        roles.add(userRole);
 
         user.setRoles(roles);
         userRepository.save(user);
